@@ -21,55 +21,80 @@ def candidate_itemset_generation(L):
     '''
     C_k = []
     for p in L.copy():
-        _p_ = p
-#        print(_p_)
         for q in L.copy():
-            _q_ = q
-#            print('\t', _q_)
-            if _p_[:-1] == _q_[:-1] and _p_[len(_p_)-1] < _q_[len(_q_)-1]:
-                _p_.append(_q_[len(_q_)-1])
-                C_k.append(_p_)
+            if p[:-1] == q[:-1] and p[len(p)-1] < q[len(q)-1]:
+                p.append(q[len(q)-1])
+                C_k.append(p)
+    return prune(C_k, L)
+
+def prune(C_k, L):
+    '''
+    For all itemsets c in C_k
+        For all (k-1) subsets s of c
+            If s not in L_k-1 then delete c from C_k
+    '''
+    for c in C_k:
+        #subsets = list(itertools.combinations(c, len(c) - 1))
+        for s in list(itertools.combinations(c, len(c) - 1)):
+            if s not in L:
+                C_k.remove(c)
     return C_k
-        
-def prune(candidates):
-    pass
 
-def eliminate_rules(itemsets, data):
-    rules = []
-    for i in range(len(itemsets)):
-        count = 0
-        for j in data:
-            if set(itemsets[i]).issubset(set(j)):
-                count += 1
-        if float(count/len(data)) >= minsup:
-            rules.append(sorted(itemsets[i]))
-    return rules
-
-def apriori(data, epsilon):
-    C_k = []
-    #1-length candidates (every unique value in the data)
-    values, counts = np.unique(data, return_counts=True)
+def frequent_itemset_generation(D, minsup):
+    #C_k = []
+    L_k = []
+    L_union = []
+    values, counts = np.unique(D, return_counts=True)
     for i in range(len(values)):
-        if float(counts[i]/len(data)) > minsup:
-            C_k.append(values[i])
-    #2-length candidates
-    itemset = eliminate_rules(list(combinations(C_k, 2)), data)
-    
-    candidates = candidate_itemset_generation(itemset)
-    for i in candidates:
-        print(i)
+        if float(counts[i]/len(D)) > minsup:
+            L_k.append(values[i])
+
+    print(L_k)
+    while not L_k.empty():
+        L_union.append(L_k)
+        C_k1 = candidate_itemset_generation(L_k, minsup)
+        L_k = []
+
+        for c in C_k1:
+            count = 0
+            for t in D:
+                if set(c).issubset(set(t)):
+                    count += 1
+            if float(count/len(D)) >= minsup:
+                L_k.append(sorted(c))
+
+    print(L_union)
+    return L_union
+
+
+def rule_generation(L, minconf):
+    k = 1
+    while not L.empty():
+        H = L[0]
+        m = 1
+        while not H.empty():
+            if k > m + 1:
+                H = #generate rules from R_m
+                R = #select candidates in H with minconf
+            m += 1
+        k += 1
+
+def apriori(data, minsup, minconf):
+    L = frequent_itemset_generation(data, minsup)
+    R = rule_generation(L, minconf)
+    return R
 
 if __name__ == '__main__':
     train_file = 'yelp5.csv'#sys.argv[1]
-    minsup = 0#float(sys.argv[2])
+    minsup = 0.25#float(sys.argv[2])
     minconf = 0.75#float(sys.argv[3])
 
     data = pd.read_csv(train_file, delimiter=',', index_col=None, engine='python')
     data = data.head(5)
     pre_process(data)
     data = data.values
-    
-        
+    apriori(data, minsup, minconf)
+
 #    for item in f_items:
 #        print('FREQUENT-ITEMS ', item.size, ' ', item.count)
 #    for item in a_rules:
