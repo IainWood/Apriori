@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import sys
 import copy
-from itertools import combinations
+from itertools import combinations, chain, groupby
 
 def pre_process(data):
     data['open'] = ['open' if row == 1 else 'closed' for row in data['open']]
@@ -102,25 +102,36 @@ def get_freq(item):
     return count
 
 def rule_generation(L, freqs, minconf):
-    rules = []
+    rules, rules_union = [], []
     
     for itemset, freqset in zip(L, freqs):
         for item, freq in zip(itemset, freqset):
-            print(item)
-            subsets = list(combinations(item, len(item) - 1))
-            print(subsets)
+#            print(item)
+#            subsets = list(combinations(item, len(item) - 1))
+#            print(subsets)
 #            print(freq)
+            
+            subsets = chain.from_iterable(combinations(list(item), r) for r in range(2, len(list(item))))
+#            for sub in subsets:
+#                print(sub)
+#            print(list(subsets))
             for X in subsets:
+                
 #                print('item type: ', type(item))
 #                print('X type: ', type(X))
 #                print(X)
                 Y = set(item) - set(X)
-#                print(X, ' -> ', Y)
+#                print(X, ' -> ', Y, '\tconf: ', get_freq(X)/freq)
 #                print(freq/get_freq(X))
-                if freq/get_freq(X) >= minconf:
-                    rules.append(X)
-#                    print(X, ' -> ', Y)
-    
+                if get_freq(item)/get_freq(X)>= minconf:
+                    rules.append((X, Y, len(X) + len(Y)))
+#                    print(X, ' -> ', Y, '\tlength: ', str(len(X) + len(Y)))
+#            rules_union.append(rules)
+    print(rules)
+    a_rules = []
+    for key, group in groupby():
+        a_rules.append(group)
+    return a_rules
 #    k = 1
 #    while L:
 #        H = L[0]
@@ -142,7 +153,7 @@ def apriori(data, minsup, minconf):
 if __name__ == '__main__':
     train_file = 'yelp5.csv'#sys.argv[1]
     minsup = 0.25#float(sys.argv[2])
-    minconf = 0.45#float(sys.argv[3])
+    minconf = 0.75#float(sys.argv[3])
 
     data = pd.read_csv(train_file, delimiter=',', index_col=None, engine='python')
     data = data.head(10)
@@ -153,5 +164,5 @@ if __name__ == '__main__':
 
     for item in f_items:
         print('FREQUENT-ITEMS ' + str(len(item[0])) + ' ' + str(len(item)))
-#    for item in a_rules:
-#        print('ASSOCIATION-RULES ' + str(len(item[0])) + ' ' + str(len(item)))
+    for item in a_rules:
+        print('ASSOCIATION-RULES ' + str(len(item[0])) + ' ' + str(len(item)))
