@@ -17,7 +17,6 @@ def candidate_itemset_generation(L):
 #    select p.item1, ..., p.item_m, q.item_m
 #    from L_k-1 as p, L_k-1 as q
 #    where p.item_1=q.item_1, ..., p.item_m-1=qitem_m-1, p.item_m < q.item_m
-    
     L_copy = copy.deepcopy(L)
     p_L_copy = sorted(copy.deepcopy(L))
     q_L_copy = sorted(copy.deepcopy(L))
@@ -41,17 +40,6 @@ def prune(candidates, L):
                 except:pass
     return candidates
 
-def eliminate_cand(itemsets, data):
-    rules = []
-    for i in range(len(itemsets)):
-        count = 0
-        for j in data:
-            if set(itemsets[i]).issubset(set(j)):
-                count += 1
-        if float(count/len(data)) >= minsup:
-            rules.append(sorted(itemsets[i]))
-    return rules
-
 def frequent_itemset_generation(D, minsup):
     #F_k, and F_union are to record the actual frequencies of each frequent itemset
     L_k, F_k = [], []
@@ -72,13 +60,14 @@ def frequent_itemset_generation(D, minsup):
         if float(count/len(data)) >= minsup:
             L_k.append(sorted(c))
             F_k.append(float(count/len(data)))
-    
+
+    #apriori part
     while L_k:
         L_union.append(L_k)
         F_union.append(F_k)
         C_k = candidate_itemset_generation(L_k)
         L_k = []
-        
+
         for c in C_k:
             count = 0
             for t in D:
@@ -98,30 +87,30 @@ def get_freq(item):
 
 def rule_generation(L, freqs, minconf):
     rules, rules_union, counts = [], [], []
-    
+
     for itemset, freqset in zip(L, freqs):
         rules = []
         for item, freq in zip(itemset, freqset):
-#            subsets = chain.from_iterable(combinations(list(item), r) for r in range(1, len(list(item))))
+            #create antecedents from all of the subsets
             for ante in chain.from_iterable(combinations(list(item), r) for r in range(1, len(list(item)))):
                 conseq = set(item) - set(ante)
                 if freq/get_freq(ante) >= minconf:
+                    if len(conseq) == 1 and conseq == 'good':
+                        print(ante, ' -> ', conseq)
                     rules.append(len(ante) + len(conseq))
-                    
         rules_union.append(rules)
 
     values = np.unique(rules_union)
     for i in range(len(values) - 1):
         counts.append([values[i][0], len(values[i])])
-            
     return counts
 
 def apriori(data, minsup, minconf):
     L, freqs = frequent_itemset_generation(data, minsup)
+    R = rule_generation(L, freqs, minconf)
+    #print results
     for item in L:
         print('FREQUENT-ITEMS ' + str(len(item[0])) + ' ' + str(len(item)))
-        
-    R = rule_generation(L, freqs, minconf)
     for item in R:
         print('ASSOCIATION-RULES ' + str(item[0]) + ' ' + str(item[1]))
 
@@ -130,8 +119,21 @@ if __name__ == '__main__':
     minsup = 0.25#float(sys.argv[2])
     minconf = 0.75#float(sys.argv[3])
 
-    data = pd.read_csv(train_file, delimiter=',', index_col=None, engine='python')
-    pre_process(data)
-    data = data.values
-    apriori(data, minsup, minconf)
-    
+    print('minconf = 0.75')
+    for minsup in [0.1, 0.3, 0.5]:
+        print('minsup = ', minsup)
+        minconf = 0.75
+        data = pd.read_csv(train_file, delimiter=',', index_col=None, engine='python')
+        pre_process(data)
+        data = data.values
+        apriori(data, minsup, minconf)
+
+    print('\n\n')
+    print('minsup = 0.25')
+    for minconf in [0.4, 0.6, 0.8]:
+        print('minconf = ', minconf)
+        minsup = 0.25
+        data = pd.read_csv(train_file, delimiter=',', index_col=None, engine='python')
+        pre_process(data)
+        data = data.values
+        apriori(data, minsup, minconf)
