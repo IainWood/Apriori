@@ -92,11 +92,11 @@ def rule_generation(L, freqs, minconf):
         rules = []
         for item, freq in zip(itemset, freqset):
             #create antecedents from all of the subsets
-            for ante in chain.from_iterable(combinations(list(item), r) for r in range(1, len(list(item)))):
+            for ante in chain.from_iterable(combinations(list(item), len) for len in range(1, len(list(item)))):
+                #compute the consequents
                 conseq = set(item) - set(ante)
+                #select those above minimum confidence
                 if freq/get_freq(ante) >= minconf:
-                    if len(conseq) == 1 and conseq == 'good':
-                        print(ante, ' -> ', conseq)
                     rules.append(len(ante) + len(conseq))
         rules_union.append(rules)
 
@@ -115,25 +115,12 @@ def apriori(data, minsup, minconf):
         print('ASSOCIATION-RULES ' + str(item[0]) + ' ' + str(item[1]))
 
 if __name__ == '__main__':
-    train_file = 'yelp5.csv'#sys.argv[1]
-    minsup = 0.25#float(sys.argv[2])
-    minconf = 0.75#float(sys.argv[3])
-
-    print('minconf = 0.75')
-    for minsup in [0.1, 0.3, 0.5]:
-        print('minsup = ', minsup)
-        minconf = 0.75
-        data = pd.read_csv(train_file, delimiter=',', index_col=None, engine='python')
-        pre_process(data)
-        data = data.values
-        apriori(data, minsup, minconf)
-
-    print('\n\n')
-    print('minsup = 0.25')
-    for minconf in [0.4, 0.6, 0.8]:
-        print('minconf = ', minconf)
-        minsup = 0.25
-        data = pd.read_csv(train_file, delimiter=',', index_col=None, engine='python')
-        pre_process(data)
-        data = data.values
-        apriori(data, minsup, minconf)
+    train_file = sys.argv[1]
+    minsup = float(sys.argv[2])
+    minconf = float(sys.argv[3])
+    
+    data = pd.read_csv(train_file, delimiter=',', index_col=None, engine='python')
+    data = data['goodForGroups']
+    pre_process(data)
+    data = data.values
+    apriori(data, minsup, minconf)
